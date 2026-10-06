@@ -9,7 +9,7 @@ export default function WebcamDetector({ onSelectBreed }) {
   const [fps, setFps] = useState(0);
   const [latency, setLatency] = useState(0);
   const [detections, setDetections] = useState([]);
-  const [confThreshold, setConfThreshold] = useState(0.35);
+  const [confThreshold, setConfThreshold] = useState(0.25);
   const [iouThreshold, setIouThreshold] = useState(0.45);
   const [cameraFacing, setCameraFacing] = useState('user'); // 'user' or 'environment'
   const [errorMessage, setErrorMessage] = useState('');
@@ -27,7 +27,7 @@ export default function WebcamDetector({ onSelectBreed }) {
       .then(() => setIsModelReady(true))
       .catch((err) => {
         console.error('Failed to load model:', err);
-        setErrorMessage('Gagal memuat session ONNX Runtime Web.');
+        setErrorMessage('Gagal memuat session ONNX Runtime Web. Silakan muat ulang halaman.');
       });
 
     return () => {
@@ -39,6 +39,10 @@ export default function WebcamDetector({ onSelectBreed }) {
   const startCamera = async () => {
     setErrorMessage('');
     try {
+      // Ensure model is ready
+      await loadModel();
+      setIsModelReady(true);
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: cameraFacing,
@@ -57,8 +61,12 @@ export default function WebcamDetector({ onSelectBreed }) {
         };
       }
     } catch (err) {
-      console.error('Webcam access error:', err);
-      setErrorMessage('Tidak dapat mengakses kamera. Pastikan izin kamera telah diberikan di browser.');
+      console.error('Webcam / Model start error:', err);
+      if (err.message && err.message.includes('ONNX')) {
+        setErrorMessage('Gagal memuat session ONNX Runtime Web. Periksa koneksi internet Anda.');
+      } else {
+        setErrorMessage('Tidak dapat mengakses kamera. Pastikan izin kamera telah diberikan di browser.');
+      }
     }
   };
 

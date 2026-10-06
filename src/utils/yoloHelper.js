@@ -2,9 +2,11 @@ import * as ort from 'onnxruntime-web';
 import { CAT_CLASSES } from './catBreedsData';
 
 // Configure ONNX Runtime WebAssembly environment for maximum browser & mobile compatibility
+const ortVersion = '1.20.0';
 ort.env.wasm.numThreads = 1;
 ort.env.wasm.simd = true;
-ort.env.wasm.wasmPaths = '/';
+// Set CDN path for WASM binaries so it works seamlessly on Vercel / static hosts / local
+ort.env.wasm.wasmPaths = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ortVersion}/dist/`;
 
 let session = null;
 let isModelLoading = false;
@@ -24,29 +26,36 @@ export async function loadModel(onProgress) {
   }
 
   isModelLoading = true;
-  if (onProgress) onProgress('Memuat model ONNX (11.7 MB)...');
+  if (onProgress) onProgress('Mengunduh model ONNX (11.7 MB)...');
 
   try {
-    // Primary load: WASM execution provider (deterministic, zero WebGL shader deadlocks)
-    session = await ort.InferenceSession.create('/models/best.onnx', {
-      executionProviders: ['wasm'],
-      graphOptimizationLevel: 'all'
-    });
-    console.log('ONNX Model Loaded Successfully (WASM):', session);
+    // Fetch model binary explicitly to prevent WASM worker URL resolution failures
+    const response = await fetch('/models/best.onnx');
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: Gagal mengunduh file /models/best.onnx`);
+    }
+    const modelBuffer = await response.arrayBuffer();
+
+    if (onProgress) onProgress('Membuat session ONNX WASM...');
+
+    try {
+      session = await ort.InferenceSession.create(modelBuffer, {
+        executionProviders: ['wasm'],
+        graphOptimizationLevel: 'all'
+      });
+      console.log('ONNX Model Loaded Successfully (WASM ArrayBuffer):', session);
+    } catch (wasmErr) {
+      console.warn('WASM execution provider failed, retrying default session creation:', wasmErr);
+      session = await ort.InferenceSession.create(modelBuffer);
+      console.log('ONNX Model Loaded Successfully (Default Fallback):', session);
+    }
+
     if (onProgress) onProgress('Model siap digunakan!');
     return session;
   } catch (err) {
-    console.warn('WASM provider failed with explicit options, trying default fallback:', err);
-    try {
-      session = await ort.InferenceSession.create('/models/best.onnx');
-      console.log('ONNX Model Loaded Successfully (Fallback):', session);
-      if (onProgress) onProgress('Model siap digunakan!');
-      return session;
-    } catch (fallbackErr) {
-      console.error('All ONNX model load attempts failed:', fallbackErr);
-      if (onProgress) onProgress('Gagal memuat model AI.');
-      throw fallbackErr;
-    }
+    console.error('Fatal ONNX model load failure:', err);
+    if (onProgress) onProgress('Gagal memuat model AI.');
+    throw err;
   } finally {
     isModelLoading = false;
   }
@@ -160,7 +169,7 @@ function nonMaxSuppression(boxes, iouThreshold = 0.45) {
 /**
  * Run inference on an image / video frame
  */
-export async function detectObjects(imageSource, confThreshold = 0.35, iouThreshold = 0.45) {
+export async function detectObjects(imageSource, confThreshold = 0.25, iouThreshold = 0.45) {
   const modelSession = await loadModel();
   if (!modelSession) throw new Error('Failed to obtain ONNX InferenceSession');
 

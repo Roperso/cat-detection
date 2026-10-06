@@ -19,7 +19,7 @@ export default function ImageDetector({ onSelectBreed }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [detections, setDetections] = useState([]);
   const [inferenceStats, setInferenceStats] = useState(null);
-  const [confThreshold, setConfThreshold] = useState(0.35);
+  const [confThreshold, setConfThreshold] = useState(0.25);
   const [iouThreshold, setIouThreshold] = useState(0.45);
   const [loadingStatus, setLoadingStatus] = useState('');
   const [isModelReady, setIsModelReady] = useState(false);
