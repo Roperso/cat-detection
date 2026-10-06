@@ -28,8 +28,8 @@ export default function Navbar({ onOpenInfo, onOpenCatalog }) {
             className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 transition font-medium whitespace-nowrap"
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span className="hidden sm:inline">Katalog 14 Ras</span>
-            <span className="sm:hidden">14 Ras</span>
+            <span className="hidden sm:inline">Daftar 14 Ras</span>
+            <span className="sm:hidden">Ras</span>
           </button>
 
           <button
@@ -37,7 +37,7 @@ export default function Navbar({ onOpenInfo, onOpenCatalog }) {
             className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 transition font-medium whitespace-nowrap"
           >
             <Info className="w-3.5 h-3.5 text-orange-400 shrink-0" />
-            <span className="hidden sm:inline">Info Model & Specs</span>
+            <span className="hidden sm:inline">Tentang Model</span>
             <span className="sm:hidden">Info</span>
           </button>
 
@@ -45,7 +45,7 @@ export default function Navbar({ onOpenInfo, onOpenCatalog }) {
 
           <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium whitespace-nowrap">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-            <span>100% In-Browser AI</span>
+            <span>Jalan Langsung di Browser</span>
           </div>
         </div>
 

@@ -204,17 +204,17 @@ export default function WebcamDetector({ onSelectBreed }) {
                 </div>
                 <div>
                   <h4 className="font-bold text-white text-base mb-1">
-                    Deteksi Realtime Kamera Web
+                    Nyalakan Kamera Langsung
                   </h4>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Arahkan kamera ke kucing untuk melakukan pemindaian ras secara terus-menerus.
+                    Arahkan kameramu ke kucing, sistem bakal langsung menebak rasnya di layar secara otomatis.
                   </p>
                 </div>
                 <button
                   onClick={startCamera}
                   className="px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-semibold transition flex items-center gap-2 shadow-md"
                 >
-                  <Video className="w-4 h-4" /> Mulai Kamera Web
+                  <Video className="w-4 h-4" /> Buka Kamera
                 </button>
               </div>
             )}
@@ -240,7 +240,7 @@ export default function WebcamDetector({ onSelectBreed }) {
                 onClick={stopCamera}
                 className="px-4 py-2 rounded-lg bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 transition flex items-center gap-1.5 font-semibold"
               >
-                <CameraOff className="w-3.5 h-3.5" /> Hentikan Kamera
+                <CameraOff className="w-3.5 h-3.5" /> Tutup Kamera
               </button>
 
               <button
@@ -251,7 +251,7 @@ export default function WebcamDetector({ onSelectBreed }) {
                 }}
                 className="px-3.5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition flex items-center gap-1.5 font-medium"
               >
-                <RefreshCw className="w-3.5 h-3.5" /> Putar Kamera
+                <RefreshCw className="w-3.5 h-3.5" /> Ganti Kamera Depan/Belakang
               </button>
             </div>
           )}
@@ -264,14 +264,14 @@ export default function WebcamDetector({ onSelectBreed }) {
             <div className="flex items-center justify-between border-b border-[#232e42] pb-3">
               <div className="flex items-center gap-2 text-white font-bold">
                 <Sliders className="w-4 h-4 text-orange-400" />
-                <span>Parameter Sensitivitas</span>
+                <span>Pengaturan Sensitivitas</span>
               </div>
             </div>
 
             {/* Confidence Slider */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs mb-1">
-                <span className="text-slate-300">Confidence Threshold</span>
+                <span className="text-slate-300">Tingkat Keyakinan (Confidence)</span>
                 <span className="text-orange-400 font-bold font-mono">
                   {Math.round(confThreshold * 100)}%
                 </span>
@@ -290,7 +290,7 @@ export default function WebcamDetector({ onSelectBreed }) {
             {/* IoU Slider */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs mb-1">
-                <span className="text-slate-300">IoU Threshold</span>
+                <span className="text-slate-300">Filter Kotak Tumpuk (IoU)</span>
                 <span className="text-cyan-400 font-bold font-mono">
                   {Math.round(iouThreshold * 100)}%
                 </span>
@@ -310,9 +310,9 @@ export default function WebcamDetector({ onSelectBreed }) {
           {/* Live Detected List */}
           <div className="p-5 bg-[#151c2c] border border-[#232e42] rounded-2xl space-y-3 text-xs">
             <div className="flex items-center justify-between border-b border-[#232e42] pb-3">
-              <h4 className="font-bold text-white">Target Terdeteksi</h4>
+              <h4 className="font-bold text-white">Kucing yang Terlihat</h4>
               <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-orange-500/10 text-orange-400 border border-orange-500/20">
-                {detections.length} Target
+                {detections.length} Kucing
               </span>
             </div>
 
@@ -352,7 +352,7 @@ export default function WebcamDetector({ onSelectBreed }) {
               </div>
             ) : (
               <div className="text-center py-6 text-slate-400 text-xs">
-                {isStreaming ? 'Sedang memindai frame video...' : 'Kamera belum aktif.'}
+                {isStreaming ? 'Lagi mencari kucing di layar...' : 'Kamera belum dinyalakan.'}
               </div>
             )}
           </div>

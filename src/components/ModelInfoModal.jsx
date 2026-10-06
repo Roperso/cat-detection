@@ -19,10 +19,10 @@ export function ModelInfoModal({ isOpen, onClose }) {
             </div>
             <div>
               <h3 className="text-base font-bold text-white tracking-tight">
-                Arsitektur & Spesifikasi Model AI
+                Spesifikasi & Cara Kerja Model
               </h3>
               <p className="text-[11px] text-slate-400">
-                Teknologi: YOLOv8 Nano • Executed via ONNX Runtime WebAssembly
+                YOLOv8 Nano dijalankan langsung di browsermu via ONNX Runtime Web
               </p>
             </div>
           </div>
@@ -47,21 +47,21 @@ export function ModelInfoModal({ isOpen, onClose }) {
             </div>
 
             <div className="p-3 bg-[#0b0f19] border border-[#232e42] rounded-xl">
-              <span className="text-[11px] text-slate-400 block">Ukuran Model</span>
+              <span className="text-[11px] text-slate-400 block">Ukuran File</span>
               <p className="text-sm font-bold text-amber-400 font-mono">11.68 MB</p>
               <span className="text-[10px] text-slate-500">Format ONNX</span>
             </div>
 
             <div className="p-3 bg-[#0b0f19] border border-[#232e42] rounded-xl">
-              <span className="text-[11px] text-slate-400 block">Resolusi Input</span>
+              <span className="text-[11px] text-slate-400 block">Ukuran Input</span>
               <p className="text-sm font-bold text-cyan-400 font-mono">640 × 640</p>
               <span className="text-[10px] text-slate-500">RGB Letterbox</span>
             </div>
 
             <div className="p-3 bg-[#0b0f19] border border-[#232e42] rounded-xl">
-              <span className="text-[11px] text-slate-400 block">Jumlah Kelas</span>
-              <p className="text-sm font-bold text-emerald-400 font-mono">14 Ras Kucing</p>
-              <span className="text-[10px] text-slate-500">Dataset Roboflow</span>
+              <span className="text-[11px] text-slate-400 block">Kelas Ras</span>
+              <p className="text-sm font-bold text-emerald-400 font-mono">14 Kucing</p>
+              <span className="text-[10px] text-slate-500">Dataset Ras Kucing</span>
             </div>
           </div>
 
@@ -69,10 +69,10 @@ export function ModelInfoModal({ isOpen, onClose }) {
           <div className="p-4 bg-[#0b0f19] border border-[#232e42] rounded-xl space-y-2 text-xs">
             <h4 className="font-bold text-orange-400 flex items-center gap-2">
               <Zap className="w-4 h-4" />
-              Mengapa Berjalan 100% di Browser Klien?
+              Kenapa Diproses Langsung di Browser?
             </h4>
             <p className="text-slate-300 leading-relaxed">
-              Dengan mengonversi model ke format <strong>ONNX WebAssembly & WebGL GPU</strong>, aplikasi ini dapat memproses deteksi objek langsung di memori perangkat Anda tanpa perlu mengirim foto/video ke backend server. Ini menjamin <strong>kecepatan inferensi tinggi</strong> dan <strong>privasi data 100% aman</strong>.
+              Karena modelnya dikonversi ke format <strong>ONNX Web</strong>, deteksi objek langsung diproses oleh perangkatmu sendiri. Nggak ada foto atau video yang diunggah ke server backend, jadi prosesnya instan dan privasimu terjaga seutuhnya.
             </p>
           </div>
 
@@ -80,27 +80,27 @@ export function ModelInfoModal({ isOpen, onClose }) {
           <div className="space-y-3 text-xs">
             <h4 className="font-bold text-white flex items-center gap-2">
               <Layers className="w-4 h-4 text-cyan-400" />
-              Alur Komputasi Inferensi (Pipeline)
+              Tahapan Cara Kerja Model
             </h4>
             <div className="space-y-2.5">
               <div className="p-3 bg-[#0b0f19] border border-[#232e42] rounded-xl flex items-start gap-3">
                 <span className="w-5 h-5 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">1</span>
                 <div>
-                  <strong className="text-slate-200">Preprocessing (Letterboxing):</strong> Gambar input di-resize secara proporsional ke resolusi 640×640 px dengan padding abu-abu, lalu dinormalisasi menjadi float32 tensor [0..1].
+                  <strong className="text-slate-200">Menyesuaikan Foto (Letterboxing):</strong> Gambar diperkecil rapi ke ukuran 640×640 px dengan latar abu-abu agar proporsi kucing tidak berubah, lalu diubah menjadi format angka yang dipahami model.
                 </div>
               </div>
 
               <div className="p-3 bg-[#0b0f19] border border-[#232e42] rounded-xl flex items-start gap-3">
                 <span className="w-5 h-5 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">2</span>
                 <div>
-                  <strong className="text-slate-200">Eksekusi ONNX Session:</strong> Menjalankan 8.400 kandidat prediksi bounding box secara serentak untuk menghitung probabilitas 14 kelas ras kucing.
+                  <strong className="text-slate-200">Perhitungan Model ONNX:</strong> Model memindai seluruh bagian gambar dan menghitung kemungkinan dari 14 ras kucing yang dilatih.
                 </div>
               </div>
 
               <div className="p-3 bg-[#0b0f19] border border-[#232e42] rounded-xl flex items-start gap-3">
                 <span className="w-5 h-5 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">3</span>
                 <div>
-                  <strong className="text-slate-200">Postprocessing (NMS):</strong> Non-Maximum Suppression menyaring kotak yang tumpang tindih berdasarkan ambang batas IoU & Confidence sebelum digambar ke Canvas.
+                  <strong className="text-slate-200">Penyaringan Kotak (NMS):</strong> Kotak deteksi yang bertumpuk disaring secara otomatis, lalu diambil hasil terbaik sesuai pengaturan sensitivitas yang kamu tentukan.
                 </div>
               </div>
             </div>

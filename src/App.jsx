@@ -31,35 +31,35 @@ export default function App() {
             <div className="space-y-2 max-w-3xl">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-medium">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>AI Computer Vision Showcase</span>
+                <span>Eksperimen Computer Vision</span>
               </div>
 
               <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
-                Deteksi & Klasifikasi 14 Ras Kucing Realtime
+                Tebak Ras Kucing Lewat Foto & Kamera
               </h1>
 
               <p className="text-sm text-slate-300 leading-relaxed">
-                Aplikasi deteksi ras kucing berbasis <strong>YOLOv8</strong> yang dikonversi ke <strong>ONNX WebAssembly</strong>. Seluruh komputasi berjalan 100% lokal di browser Anda — tanpa mengirim foto atau video ke server.
+                Tinggal upload foto atau sorot pakai kamera, web ini bakal langsung mengenali ras kucingmu. Semua proses jalan langsung di browsermu, jadi foto maupun videomu tetap aman dan nggak dikirim ke server mana pun.
               </p>
             </div>
 
             {/* Quick Spec Cards */}
             <div className="grid grid-cols-2 gap-2.5 shrink-0 min-w-[260px] text-xs">
               <div className="p-3 bg-[#0b0f19]/80 border border-[#232e42] rounded-xl">
-                <span className="text-slate-400 text-[11px] block">Model Architecture</span>
+                <span className="text-slate-400 text-[11px] block">Model</span>
                 <span className="font-bold text-orange-400 font-mono">YOLOv8 Nano</span>
               </div>
               <div className="p-3 bg-[#0b0f19]/80 border border-[#232e42] rounded-xl">
-                <span className="text-slate-400 text-[11px] block">Execution Engine</span>
+                <span className="text-slate-400 text-[11px] block">Engine</span>
                 <span className="font-bold text-cyan-400 font-mono">ONNX Web</span>
               </div>
               <div className="p-3 bg-[#0b0f19]/80 border border-[#232e42] rounded-xl">
-                <span className="text-slate-400 text-[11px] block">Jumlah Ras</span>
-                <span className="font-bold text-amber-400 font-mono">14 Kelas</span>
+                <span className="text-slate-400 text-[11px] block">Bisa Deteksi</span>
+                <span className="font-bold text-amber-400 font-mono">14 Ras Kucing</span>
               </div>
               <div className="p-3 bg-[#0b0f19]/80 border border-[#232e42] rounded-xl">
-                <span className="text-slate-400 text-[11px] block">Keamanan Data</span>
-                <span className="font-bold text-emerald-400 font-mono">100% Private</span>
+                <span className="text-slate-400 text-[11px] block">Privasi</span>
+                <span className="font-bold text-emerald-400 font-mono">Aman di Browser</span>
               </div>
             </div>
 
@@ -77,7 +77,7 @@ export default function App() {
                 }`}
             >
               <ImageIcon className="w-4 h-4" />
-              <span>Upload Gambar & Sampel Foto</span>
+              <span>Pakai Foto / Sampel</span>
             </button>
 
             <button
@@ -88,12 +88,12 @@ export default function App() {
                 }`}
             >
               <Camera className="w-4 h-4" />
-              <span>Live Kamera Realtime</span>
+              <span>Pakai Kamera Langsung</span>
             </button>
           </div>
 
           <span className="text-xs text-slate-400 font-medium self-center">
-            Mode Aktif: <strong className="text-white">{activeTab === 'image' ? 'Analisis File Foto' : 'Deteksi Kamera Web'}</strong>
+            Pilihan aktif: <strong className="text-white">{activeTab === 'image' ? 'Upload Foto' : 'Kamera Web'}</strong>
           </span>
         </div>
 
