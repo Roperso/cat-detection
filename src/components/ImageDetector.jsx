@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, Sliders, Image as ImageIcon, Download, RefreshCw, Sparkles, ChevronRight, Zap } from 'lucide-react';
+import { Upload, Sliders, Image as ImageIcon, Download, RefreshCw, Sparkles, ChevronRight, Zap, AlertCircle } from 'lucide-react';
 import { detectObjects, loadModel } from '../utils/yoloHelper';
 import { CLASS_COLORS, CAT_BREED_INFO } from '../utils/catBreedsData';
 
@@ -23,6 +23,7 @@ export default function ImageDetector({ onSelectBreed }) {
   const [iouThreshold, setIouThreshold] = useState(0.45);
   const [loadingStatus, setLoadingStatus] = useState('');
   const [isModelReady, setIsModelReady] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const imageRef = useRef(null);
   const canvasRef = useRef(null);
@@ -31,8 +32,14 @@ export default function ImageDetector({ onSelectBreed }) {
   // Preload model on mount
   useEffect(() => {
     loadModel((status) => setLoadingStatus(status))
-      .then(() => setIsModelReady(true))
-      .catch((err) => console.error('Model load error:', err));
+      .then(() => {
+        setIsModelReady(true);
+        setErrorMessage('');
+      })
+      .catch((err) => {
+        console.error('Model load error:', err);
+        setErrorMessage('Gagal memuat model ONNX Web. Silakan refresh halaman.');
+      });
   }, []);
 
   // Run detection whenever image or threshold changes
@@ -40,6 +47,7 @@ export default function ImageDetector({ onSelectBreed }) {
     if (!imgElement || !imgElement.complete || imgElement.naturalWidth === 0) return;
 
     setIsProcessing(true);
+    setErrorMessage('');
     try {
       const result = await detectObjects(imgElement, confThreshold, iouThreshold);
       setDetections(result.detections);
@@ -53,6 +61,7 @@ export default function ImageDetector({ onSelectBreed }) {
       drawBoundingBoxes(imgElement, result.detections);
     } catch (err) {
       console.error('Detection failed:', err);
+      setErrorMessage(`Gagal menjalankan deteksi: ${err.message || 'Error inference'}`);
     } finally {
       setIsProcessing(false);
     }
@@ -152,7 +161,14 @@ export default function ImageDetector({ onSelectBreed }) {
 
   return (
     <div className="space-y-6">
-      
+      {/* Alert Error Banner */}
+      {errorMessage && (
+        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
       {/* Quick Test Sample Bar */}
       <div className="p-4 bg-[#151c2c] border border-[#232e42] rounded-2xl space-y-3">
         <div className="flex items-center justify-between text-xs">

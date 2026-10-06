@@ -2,11 +2,12 @@ import * as ort from 'onnxruntime-web';
 import { CAT_CLASSES } from './catBreedsData';
 
 // Configure ONNX Runtime WebAssembly environment for maximum browser & mobile compatibility
-const ortVersion = '1.20.0';
-ort.env.wasm.numThreads = 1;
-ort.env.wasm.simd = true;
-// Set CDN path for WASM binaries so it works seamlessly on Vercel / static hosts / local
-ort.env.wasm.wasmPaths = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ortVersion}/dist/`;
+if (typeof window !== 'undefined') {
+  ort.env.wasm.numThreads = 1;
+  ort.env.wasm.simd = true;
+  // Point to local origin where matching 1.30.0 WASM and MJS binaries are served
+  ort.env.wasm.wasmPaths = window.location.origin + '/';
+}
 
 let session = null;
 let isModelLoading = false;
@@ -29,7 +30,7 @@ export async function loadModel(onProgress) {
   if (onProgress) onProgress('Mengunduh model ONNX (11.7 MB)...');
 
   try {
-    // Fetch model binary explicitly to prevent WASM worker URL resolution failures
+    // 1. Fetch model binary explicitly
     const response = await fetch('/models/best.onnx');
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: Gagal mengunduh file /models/best.onnx`);
@@ -38,6 +39,7 @@ export async function loadModel(onProgress) {
 
     if (onProgress) onProgress('Membuat session ONNX WASM...');
 
+    // 2. Multi-tier session initialization
     try {
       session = await ort.InferenceSession.create(modelBuffer, {
         executionProviders: ['wasm'],
@@ -46,8 +48,14 @@ export async function loadModel(onProgress) {
       console.log('ONNX Model Loaded Successfully (WASM ArrayBuffer):', session);
     } catch (wasmErr) {
       console.warn('WASM execution provider failed, retrying default session creation:', wasmErr);
-      session = await ort.InferenceSession.create(modelBuffer);
-      console.log('ONNX Model Loaded Successfully (Default Fallback):', session);
+      try {
+        session = await ort.InferenceSession.create(modelBuffer);
+        console.log('ONNX Model Loaded Successfully (Default Fallback):', session);
+      } catch (bufErr) {
+        console.warn('Buffer creation failed, trying direct URL:', bufErr);
+        session = await ort.InferenceSession.create('/models/best.onnx');
+        console.log('ONNX Model Loaded Successfully (Path Fallback):', session);
+      }
     }
 
     if (onProgress) onProgress('Model siap digunakan!');
