@@ -24,4 +24,5 @@ dist-ssr
 
 # PyTorch raw weights (we use public/models/best.onnx)
 best.pt
-samples/
+/samples/
+
