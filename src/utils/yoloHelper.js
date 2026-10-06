@@ -1,9 +1,10 @@
 import * as ort from 'onnxruntime-web';
 import { CAT_CLASSES } from './catBreedsData';
 
-// Configure ONNX Runtime WebAssembly environment
-ort.env.wasm.numThreads = Math.min(4, navigator.hardwareConcurrency || 2);
+// Configure ONNX Runtime WebAssembly environment for maximum browser & mobile compatibility
+ort.env.wasm.numThreads = 1;
 ort.env.wasm.simd = true;
+ort.env.wasm.wasmPaths = '/';
 
 let session = null;
 let isModelLoading = false;
@@ -14,37 +15,37 @@ let isModelLoading = false;
 export async function loadModel(onProgress) {
   if (session) return session;
   if (isModelLoading) {
-    while (isModelLoading) {
+    let attempts = 0;
+    while (isModelLoading && attempts < 100) {
       await new Promise((r) => setTimeout(r, 100));
+      attempts++;
     }
-    return session;
+    if (session) return session;
   }
 
   isModelLoading = true;
   if (onProgress) onProgress('Memuat model ONNX (11.7 MB)...');
 
   try {
-    // Try WebGL execution provider first for hardware GPU acceleration, fallback to WASM
-    const options = {
-      executionProviders: ['webgl', 'wasm'],
+    // Primary load: WASM execution provider (deterministic, zero WebGL shader deadlocks)
+    session = await ort.InferenceSession.create('/models/best.onnx', {
+      executionProviders: ['wasm'],
       graphOptimizationLevel: 'all'
-    };
-
-    session = await ort.InferenceSession.create('/models/best.onnx', options);
-    console.log('ONNX Model Loaded Successfully:', session);
+    });
+    console.log('ONNX Model Loaded Successfully (WASM):', session);
     if (onProgress) onProgress('Model siap digunakan!');
     return session;
   } catch (err) {
-    console.warn('WebGL provider failed, falling back to WASM:', err);
+    console.warn('WASM provider failed with explicit options, trying default fallback:', err);
     try {
-      session = await ort.InferenceSession.create('/models/best.onnx', {
-        executionProviders: ['wasm'],
-      });
-      if (onProgress) onProgress('Model siap digunakan (WASM mode)!');
+      session = await ort.InferenceSession.create('/models/best.onnx');
+      console.log('ONNX Model Loaded Successfully (Fallback):', session);
+      if (onProgress) onProgress('Model siap digunakan!');
       return session;
-    } catch (wasmErr) {
-      console.error('Failed to load ONNX model:', wasmErr);
-      throw wasmErr;
+    } catch (fallbackErr) {
+      console.error('All ONNX model load attempts failed:', fallbackErr);
+      if (onProgress) onProgress('Gagal memuat model AI.');
+      throw fallbackErr;
     }
   } finally {
     isModelLoading = false;
@@ -55,8 +56,12 @@ export async function loadModel(onProgress) {
  * Preprocess image with letterbox resize to 640x640
  */
 function preprocessImage(imageSource, inputWidth = 640, inputHeight = 640) {
-  const origWidth = imageSource.naturalWidth || imageSource.videoWidth || imageSource.width;
-  const origHeight = imageSource.naturalHeight || imageSource.videoHeight || imageSource.height;
+  const origWidth = imageSource.naturalWidth || imageSource.videoWidth || imageSource.width || 640;
+  const origHeight = imageSource.naturalHeight || imageSource.videoHeight || imageSource.height || 640;
+
+  if (origWidth === 0 || origHeight === 0) {
+    throw new Error('Image source dimensions are 0');
+  }
 
   // Calculate letterbox scaling
   const scale = Math.min(inputWidth / origWidth, inputHeight / origHeight);
@@ -142,7 +147,6 @@ function nonMaxSuppression(boxes, iouThreshold = 0.45) {
     for (let j = i + 1; j < boxes.length; j++) {
       if (!active[j]) continue;
 
-      // Check IoU for same or across classes
       const iou = calculateIoU(boxes[i], boxes[j]);
       if (iou > iouThreshold) {
         active[j] = false;
@@ -158,6 +162,8 @@ function nonMaxSuppression(boxes, iouThreshold = 0.45) {
  */
 export async function detectObjects(imageSource, confThreshold = 0.35, iouThreshold = 0.45) {
   const modelSession = await loadModel();
+  if (!modelSession) throw new Error('Failed to obtain ONNX InferenceSession');
+
   const startTime = performance.now();
 
   const { tensor, scale, padX, padY, origWidth, origHeight } = preprocessImage(imageSource, 640, 640);
@@ -233,3 +239,4 @@ export async function detectObjects(imageSource, confThreshold = 0.35, iouThresh
     origHeight
   };
 }
+
