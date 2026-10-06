@@ -77,13 +77,7 @@
 
 ---
 
-## ☁️ Deploy ke Vercel
 
-Proyek ini siap di-deploy ke **Vercel** secara gratis:
-1. Hubungkan akun Vercel Anda dengan GitHub.
-2. Import repositori `Roperso/cat-detection`.
-3. Vercel akan mendeteksi **Vite** secara otomatis.
-4. Klik **Deploy**.
 
 ---
 
