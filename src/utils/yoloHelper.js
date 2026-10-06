@@ -1,0 +1,235 @@
+import * as ort from 'onnxruntime-web';
+import { CAT_CLASSES } from './catBreedsData';
+
+// Configure ONNX Runtime WebAssembly environment
+ort.env.wasm.numThreads = Math.min(4, navigator.hardwareConcurrency || 2);
+ort.env.wasm.simd = true;
+
+let session = null;
+let isModelLoading = false;
+
+/**
+ * Load the ONNX model session
+ */
+export async function loadModel(onProgress) {
+  if (session) return session;
+  if (isModelLoading) {
+    while (isModelLoading) {
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    return session;
+  }
+
+  isModelLoading = true;
+  if (onProgress) onProgress('Memuat model ONNX (11.7 MB)...');
+
+  try {
+    // Try WebGL execution provider first for hardware GPU acceleration, fallback to WASM
+    const options = {
+      executionProviders: ['webgl', 'wasm'],
+      graphOptimizationLevel: 'all'
+    };
+
+    session = await ort.InferenceSession.create('/models/best.onnx', options);
+    console.log('ONNX Model Loaded Successfully:', session);
+    if (onProgress) onProgress('Model siap digunakan!');
+    return session;
+  } catch (err) {
+    console.warn('WebGL provider failed, falling back to WASM:', err);
+    try {
+      session = await ort.InferenceSession.create('/models/best.onnx', {
+        executionProviders: ['wasm'],
+      });
+      if (onProgress) onProgress('Model siap digunakan (WASM mode)!');
+      return session;
+    } catch (wasmErr) {
+      console.error('Failed to load ONNX model:', wasmErr);
+      throw wasmErr;
+    }
+  } finally {
+    isModelLoading = false;
+  }
+}
+
+/**
+ * Preprocess image with letterbox resize to 640x640
+ */
+function preprocessImage(imageSource, inputWidth = 640, inputHeight = 640) {
+  const origWidth = imageSource.naturalWidth || imageSource.videoWidth || imageSource.width;
+  const origHeight = imageSource.naturalHeight || imageSource.videoHeight || imageSource.height;
+
+  // Calculate letterbox scaling
+  const scale = Math.min(inputWidth / origWidth, inputHeight / origHeight);
+  const newWidth = Math.round(origWidth * scale);
+  const newHeight = Math.round(origHeight * scale);
+  const padX = (inputWidth - newWidth) / 2;
+  const padY = (inputHeight - newHeight) / 2;
+
+  // Draw to offscreen canvas
+  const canvas = document.createElement('canvas');
+  canvas.width = inputWidth;
+  canvas.height = inputHeight;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+  // Fill with standard YOLO letterbox background (114, 114, 114)
+  ctx.fillStyle = '#727272';
+  ctx.fillRect(0, 0, inputWidth, inputHeight);
+
+  // Draw image centered
+  ctx.drawImage(imageSource, padX, padY, newWidth, newHeight);
+
+  const imageData = ctx.getImageData(0, 0, inputWidth, inputHeight);
+  const data = imageData.data;
+
+  // Convert RGBA HWC to RGB CHW Float32Array normalized to [0, 1]
+  const float32Data = new Float32Array(3 * inputWidth * inputHeight);
+  const totalPixels = inputWidth * inputHeight;
+
+  for (let i = 0; i < totalPixels; i++) {
+    const r = data[i * 4] / 255.0;
+    const g = data[i * 4 + 1] / 255.0;
+    const b = data[i * 4 + 2] / 255.0;
+
+    float32Data[i] = r;                          // Channel R
+    float32Data[totalPixels + i] = g;            // Channel G
+    float32Data[totalPixels * 2 + i] = b;        // Channel B
+  }
+
+  const tensor = new ort.Tensor('float32', float32Data, [1, 3, inputHeight, inputWidth]);
+
+  return {
+    tensor,
+    scale,
+    padX,
+    padY,
+    origWidth,
+    origHeight,
+    canvas
+  };
+}
+
+/**
+ * Calculate Intersection over Union (IoU)
+ */
+function calculateIoU(box1, box2) {
+  const x1 = Math.max(box1.x, box2.x);
+  const y1 = Math.max(box1.y, box2.y);
+  const x2 = Math.min(box1.x + box1.width, box2.x + box2.width);
+  const y2 = Math.min(box1.y + box1.height, box2.y + box2.height);
+
+  const intersection = Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
+  const area1 = box1.width * box1.height;
+  const area2 = box2.width * box2.height;
+  const union = area1 + area2 - intersection;
+
+  return union <= 0 ? 0 : intersection / union;
+}
+
+/**
+ * Non-Maximum Suppression (NMS)
+ */
+function nonMaxSuppression(boxes, iouThreshold = 0.45) {
+  boxes.sort((a, b) => b.score - a.score);
+
+  const selectedBoxes = [];
+  const active = new Array(boxes.length).fill(true);
+
+  for (let i = 0; i < boxes.length; i++) {
+    if (!active[i]) continue;
+
+    selectedBoxes.push(boxes[i]);
+
+    for (let j = i + 1; j < boxes.length; j++) {
+      if (!active[j]) continue;
+
+      // Check IoU for same or across classes
+      const iou = calculateIoU(boxes[i], boxes[j]);
+      if (iou > iouThreshold) {
+        active[j] = false;
+      }
+    }
+  }
+
+  return selectedBoxes;
+}
+
+/**
+ * Run inference on an image / video frame
+ */
+export async function detectObjects(imageSource, confThreshold = 0.35, iouThreshold = 0.45) {
+  const modelSession = await loadModel();
+  const startTime = performance.now();
+
+  const { tensor, scale, padX, padY, origWidth, origHeight } = preprocessImage(imageSource, 640, 640);
+
+  // Dynamic input name lookup
+  const inputName = modelSession.inputNames[0];
+  const feeds = { [inputName]: tensor };
+
+  const results = await modelSession.run(feeds);
+  const outputName = modelSession.outputNames[0];
+  const outputTensor = results[outputName];
+
+  // Output shape: [1, 18, 8400]
+  const [batch, channels, numBoxes] = outputTensor.dims;
+  const data = outputTensor.data;
+
+  const numClasses = channels - 4; // 14
+  const candidateBoxes = [];
+
+  for (let i = 0; i < numBoxes; i++) {
+    // Find best class
+    let maxScore = 0;
+    let bestClassId = -1;
+
+    for (let c = 0; c < numClasses; c++) {
+      const classScore = data[(4 + c) * numBoxes + i];
+      if (classScore > maxScore) {
+        maxScore = classScore;
+        bestClassId = c;
+      }
+    }
+
+    if (maxScore >= confThreshold && bestClassId >= 0) {
+      const cx = data[0 * numBoxes + i];
+      const cy = data[1 * numBoxes + i];
+      const w = data[2 * numBoxes + i];
+      const h = data[3 * numBoxes + i];
+
+      // Convert from letterbox 640x640 back to original image coordinates
+      let x1 = (cx - w / 2 - padX) / scale;
+      let y1 = (cy - h / 2 - padY) / scale;
+      let width = w / scale;
+      let height = h / scale;
+
+      // Clamp to original dimensions
+      x1 = Math.max(0, Math.min(origWidth, x1));
+      y1 = Math.max(0, Math.min(origHeight, y1));
+      width = Math.min(origWidth - x1, width);
+      height = Math.min(origHeight - y1, height);
+
+      if (width > 5 && height > 5) {
+        candidateBoxes.push({
+          x: x1,
+          y: y1,
+          width,
+          height,
+          score: maxScore,
+          classId: bestClassId,
+          className: CAT_CLASSES[bestClassId] || `Class_${bestClassId}`
+        });
+      }
+    }
+  }
+
+  // Apply NMS
+  const finalDetections = nonMaxSuppression(candidateBoxes, iouThreshold);
+  const inferenceTime = performance.now() - startTime;
+
+  return {
+    detections: finalDetections,
+    inferenceTime: Math.round(inferenceTime),
+    origWidth,
+    origHeight
+  };
+}
